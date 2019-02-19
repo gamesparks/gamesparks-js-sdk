@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Insert title here</title>
+<script type="text/javascript" src="aes-js/index.js"></script>
+<script type="text/javascript" src="realtime/commands/op-codes.js"></script>
+<script type="text/javascript" src="realtime/connection/connection.js"></script>
+<script type="text/javascript" src="realtime/connection/reliable-connection.js"></script>
+<script type="text/javascript" src="realtime/proto/wire.js"></script>
+<script type="text/javascript" src="realtime/proto/key.js"></script>
+<script type="text/javascript" src="realtime/proto/stream.js"></script>
+<script type="text/javascript" src="realtime/proto/position-stream.js"></script>
+<script type="text/javascript" src="realtime/proto/limited-position-stream.js"></script>
+<script type="text/javascript" src="realtime/proto/protocol-parser.js"></script>
+<script type="text/javascript" src="realtime/pools/object-pool.js"></script>
+<script type="text/javascript" src="realtime/commands/log-command.js"></script>
+<script type="text/javascript" src="realtime/commands/custom-command.js"></script>
+<script type="text/javascript" src="realtime/commands/action-command.js"></script>
+<script type="text/javascript" src="realtime/commands/command-factory.js"></script>
+<script type="text/javascript" src="realtime/commands/results/abstract-result.js"></script>
+<script type="text/javascript" src="realtime/commands/results/login-result.js"></script>
+<script type="text/javascript" src="realtime/commands/results/ping-result.js"></script>
+<script type="text/javascript" src="realtime/commands/results/player-connect-message.js"></script>
+<script type="text/javascript" src="realtime/commands/results/player-disconnect-message.js"></script>
+<script type="text/javascript" src="realtime/commands/results/udp-connect-message.js"></script>
+<script type="text/javascript" src="realtime/commands/requests/rt-request.js"></script>
+<script type="text/javascript" src="realtime/commands/requests/login-command.js"></script>
+<script type="text/javascript" src="realtime/commands/requests/ping-command.js"></script>
+<script type="text/javascript" src="realtime/commands/requests/custom-request.js"></script>
+<script type="text/javascript" src="realtime/proto/packet.js"></script>
+<script type="text/javascript" src="realtime/pools/pooled-objects.js"></script>
+<script type="text/javascript" src="realtime/proto/rt-data-serializer.js"></script>
+<script type="text/javascript" src="realtime/rt-vector.js"></script>
+<script type="text/javascript" src="realtime/proto/rt-val.js"></script>
+<script type="text/javascript" src="realtime/rt-data.js"></script>
+<script type="text/javascript" src="realtime/rt-packet.js"></script>
+<script type="text/javascript" src="realtime/rt-session-impl.js"></script>
+<script type="text/javascript" src="realtime/gamesparks-rt.js"></script>
+<script type="text/javascript" src="tests/countdown-latch.js"></script>
+<script type="text/javascript" src="tests/test-config.js"></script>
+<script type="text/javascript" src="tests/test-session.js"></script>
+<script type="text/javascript" src="tests/test-utils.js"></script>
+<script type="text/javascript" src="tests/test-context.js"></script>
+<script type="text/javascript" src="tests/test-base.js"></script>
+<script type="text/javascript" src="tests/test-player-connect.js"></script>
+<script type="text/javascript" src="tests/test-set-data.js"></script>
+<script type="text/javascript" src="tests/test-new-packet.js"></script>
+<script type="text/javascript" src="tests/test-on-packet.js"></script>
+<script type="text/javascript" src="tests/test-request-response.js"></script>
+<script type="text/javascript" src="tests/test-runaway.js"></script>
+<script type="text/javascript" src="tests/test-valid-req-resp-packets.js"></script>
+<script type="text/javascript" src="tests/test-simple-require.js"></script>
+<script type="text/javascript" src="tests/test-player-connect2.js"></script>
+<script type="text/javascript" src="tests/test-round-trip-latency.js"></script>
+<script type="text/javascript" src="tests/test-thirteen-ints.js"></script>
+<script type="text/javascript" src="tests/test-rt-data-resets.js"></script>
+<script type="text/javascript" src="tests/test-ses-ready-if-start.js"></script>
+<script type="text/javascript" src="tests/test-ses-no-ready-if-no-start.js"></script>
+<script type="text/javascript" src="tests/test-ses-basic-comm.js"></script>
+<script type="text/javascript" src="tests/test-send-payload.js"></script>
+<script type="text/javascript" src="tests/test-send-rt-data.js"></script>
+<script type="text/javascript" src="tests/test-send-data-get-arrays.js"></script>
+<script type="text/javascript" src="tests/test-extract-correct-data.js"></script>
+<script type="text/javascript" src="gamesparks.js"></script>
+<script type="text/javascript" src="gamesparks-functions.js"></script>
+<script type="text/javascript" src="hmac-sha256.js"></script>
+
+</head>
+<body>
+	apiKey<input id="apiKey"/>
+	apiSecret<input id="apiSecret"/>
+	apiCredential<input id="apiCredential"/>
+	<button onClick="init();">Initalise</button>
+	<button onClick='gamesparks.registrationRequest("testuser", "testuser", "testuser", registerResponse)'>Register</button>
+	<button onClick='gamesparks.authenticationRequest("testuser", "testuser", loginResponse)'>Login</button>
+	<button onClick='gamesparks.accountDetailsRequest(accountDetailsResponse)'>Account Details</button>
+	<button onClick='customEvent()'>Custom Event</button>
+	<button onClick='testRT()'>Test RT</button>
+	<div id="messages"></div>
+</body>
+<script type="text/javascript">
+
+	//Create a gamesparks object to be used
+	var gamesparks = new GameSparks();
+
+	//Initialse the SDK
+	function init(){
+		gamesparks.initPreview({
+			key:document.getElementById ('apiKey').value, 
+			secret:document.getElementById ('apiSecret').value,
+			credential:document.getElementById ('apiCredential').value,
+			onNonce: onNonce,
+			onInit:onInit,
+			onMessage:onMessage,
+			logger:console.log,
+		});
+	}
+
+	//Callback function to hmac sha256 a nonce with the secret. It's assumed you will have your own method of securing the secret;
+	function onNonce(nonce){
+		return CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(nonce, document.getElementById ('apiSecret').value));
+	}
+	
+	//Callback to handle when the SDK is initialised and ready to go
+	function onInit(){
+		console.log("Initialised");
+	}
+	
+	//Callback to handle async messages from the gamesparks platform
+	function onMessage(message){
+		console.log("onMessage");
+	}
+	
+	//Response handler examples
+	function registerResponse(response){
+		console.log(JSON.stringify(response));
+	}
+	
+	function loginResponse(response){
+		console.log(JSON.stringify(response));
+	}
+	
+	function accountDetailsResponse(response){
+		console.log(JSON.stringify(response));
+	}
+
+	function customEvent(){
+
+		gamesparks.sendWithData(
+			"LogEventRequest", 
+	    	{
+	        	eventKey : "FIRST_EVENT",
+	        	NUMBER_ATTR : 123,
+	        	STRING_ATTR : "this is a string",
+	        	JSON_ATTR : {key1 : 12, key2 : "abc"}
+	    	}, 
+	    	function(response){console.log(JSON.stringify(response));}
+		);
+	}
+
+	var myTimer = null;
+	var currTest = 0;
+	var startNewTest = true;
+	var tests = [];
+
+	tests.push(new TestConfig());
+	tests.push(new TestPlayerConnect());
+	tests.push(new TestSetData());
+	tests.push(new TestNewPacket());
+	tests.push(new TestOnPacket());
+	//tests.push(new TestRequestResponse());
+	tests.push(new TestRunaway());
+	tests.push(new TestValidateRequestResponsePackets());
+	tests.push(new TestSimpleRequire());
+	tests.push(new TestPlayerConnect2());
+	tests.push(new TestRoundTripLatency());
+	tests.push(new TestThirteenInts());
+	tests.push(new TestRTDataResets());
+	tests.push(new TestSessionsBecomeReadyIfStarted());
+	tests.push(new TestSessionsDontBecomeReadyIfNotStarted());
+	tests.push(new TestSessionsDoBasicCommunication());
+	tests.push(new TestSendPayload());
+	tests.push(new TestSendRTData());
+	tests.push(new TestSendRTDataAndGetAJSIntAndFloatArray());
+	tests.push(new TestJavaScriptExtractCorrectDataFromRTDataObject());
+	
+	function testRT() {
+		if (myTimer) {
+			clearTimeout(myTimer);
+		}
+
+		myTimer = setInterval(mainLoop, 100);
+
+		console.log("##############################################");
+	}
+
+	function mainLoop() {
+		if (startNewTest) {
+			startNewTest = false;
+
+			setTimeout(function() {
+				tests[currTest].start();
+			}, 500);
+		} else {
+			if (tests[currTest].finished) {
+				currTest = currTest + 1;
+
+				if (currTest >= tests.length) {
+					clearInterval(myTimer);
+					myTimer = null;
+
+					console.log("##############################################");
+					console.log("FINISHED!");
+				} else {
+					startNewTest = true;
+				}
+			}
+		}
+	}
+</script>
+</html>

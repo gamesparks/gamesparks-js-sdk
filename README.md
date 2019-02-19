@@ -1,6 +1,6 @@
 ## Gamesparks Js SDK
 
-The official GameSparks XYZ
+The official GameSparks Javascript SDK
 
 ## License
 
